@@ -93,11 +93,20 @@ class behat_theme_boost_behat_repository_upload extends behat_repository_upload 
                     DIRECTORY_SEPARATOR . substr($filepath, 6);
         }
         $filepath = str_replace('/', DIRECTORY_SEPARATOR, $filepath);
-        if (!is_readable($filepath)) {
-            $filepath = $CFG->dirroot . DIRECTORY_SEPARATOR . $filepath;
-            if (!is_readable($filepath)) {
-                throw new ExpectationException('The file to be uploaded does not exist.', $this->getSession());
-            }
+
+        $islocal = !property_exists($CFG, 'behat_node_dirroot');
+
+        // Validate that the file exists on the local disk.
+        $localfilepath = $CFG->dirroot . DIRECTORY_SEPARATOR . $filepath;
+        if (!is_readable($localfilepath)) {
+            throw new ExpectationException('The file to be uploaded does not exist.', $this->getSession());
+        }
+
+        if ($islocal) {
+            $filepath = $localfilepath;
+        } else {
+            $filepath = $CFG->behat_node_dirroot . DIRECTORY_SEPARATOR . $filepath;
+            $filepath = str_replace(DIRECTORY_SEPARATOR, $CFG->behat_node_dir_sep, $filepath);
         }
         $file->attachFile($filepath);
 
