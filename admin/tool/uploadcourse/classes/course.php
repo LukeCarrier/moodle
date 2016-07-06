@@ -813,7 +813,9 @@ class tool_uploadcourse_course {
                 if (empty($instance)) {
                     $plugin = $enrolmentplugins[$enrolmethod];
                     $instance = new stdClass();
-                    $instance->id = $plugin->add_default_instance($course);
+                    if (!$instance->id = $plugin->add_default_instance($course)) {
+                        $instance->id = $plugin->add_instance($course);
+                    }
                     $instance->roleid = $plugin->get_config('roleid');
                     $instance->status = ENROL_INSTANCE_ENABLED;
                 } else {
