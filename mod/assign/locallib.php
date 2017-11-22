@@ -123,6 +123,13 @@ SQL;
 AND gg.groupingid = :groupingid
 SQL;
 
+    /**
+     * Instances, indexed by CMID.
+     *
+     * @var assign[]
+     */
+    private static $instances = array();
+
     /** @var stdClass the assignment record that contains the global settings for this assign instance */
     private $instance;
 
@@ -191,6 +198,26 @@ SQL;
 
     /** @var array cached list of IDs of users who share group membership with the user. The cache key will be the user. */
     private $sharedgroupmembers = array();
+
+    /**
+     * Get (or create) a singleton instance.
+     *
+     * @param context|null $coursemodulecontext
+     * @param stdClass|null $coursemodule
+     * @param stdClass|null $course
+     *
+     * @return assign
+     */
+    public static function instance($coursemodulecontext, $coursemodule, $course) {
+        $cmid = $coursemodulecontext->instanceid;
+
+        if (!array_key_exists($cmid, static::$instances)) {
+            static::$instances[$cmid] = new static(
+                    $coursemodulecontext, $coursemodule, $course);
+        }
+
+        return static::$instances[$cmid];
+    }
 
     /**
      * Constructor for the base assign class.

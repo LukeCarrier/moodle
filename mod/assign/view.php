@@ -35,7 +35,7 @@ $context = context_module::instance($cm->id);
 
 require_capability('mod/assign:view', $context);
 
-$assign = new assign($context, $cm, $course);
+$assign = assign::instance($context, $cm, $course);
 $urlparams = array('id' => $id,
                   'action' => optional_param('action', '', PARAM_ALPHA),
                   'rownum' => optional_param('rownum', 0, PARAM_INT),
