@@ -87,6 +87,41 @@ use \mod_assign\output\grading_app;
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class assign {
+    /**
+     * SQL: group members.
+     *
+     * @var string
+     */
+    const SQL_GROUP_MEMBERS = <<<SQL
+SELECT
+    CONCAT(gm.userid, '-', gm.groupid) AS mhash,
+    gm.userid AS userid, gm.groupid AS groupid
+FROM {groups_members} gm
+INNER JOIN {groups} g
+    ON g.id = gm.groupid
+%s
+WHERE g.courseid = :courseid
+%s
+SQL;
+
+    /**
+     * SQL: group members in grouping (JOINs).
+     *
+     * @var string
+     */
+    const SQL_GROUP_MEMBERS_GROUPING_JOINS = <<<SQL
+INNER JOIN {groupings_groups} gg
+    ON gg.groupid = gm.groupid
+SQL;
+
+    /**
+     * SQL: group members in grouping (WHERE).
+     *
+     * @var string
+     */
+    const SQL_GROUP_MEMBERS_GROUPING_WHERE = <<<SQL
+AND gg.groupingid = :groupingid
+SQL;
 
     /** @var stdClass the assignment record that contains the global settings for this assign instance */
     private $instance;
@@ -2575,16 +2610,38 @@ class assign {
      * @return array The group objects
      */
     public function get_all_groups($userid) {
-        if (isset($this->usergroups[$userid])) {
-            return $this->usergroups[$userid];
+        global $DB;
+
+        if (!$this->usergroups) {
+            $groupingid = $this->get_instance()->teamsubmissiongroupingid;
+            $courseid = $this->get_course()->id;
+
+            $groupdata = groups_get_course_data($courseid);
+
+            $joins = '';
+            $where = '';
+            $params = array(
+                'courseid' => $courseid,
+            );
+            if ($groupingid) {
+                $params['groupingid'] = $groupingid;
+                $joins = static::SQL_GROUP_MEMBERS_GROUPING_JOINS;
+                $where = static::SQL_GROUP_MEMBERS_GROUPING_WHERE;
+            }
+            $sql = sprintf(static::SQL_GROUP_MEMBERS, $joins, $where);
+
+            $rs = $DB->get_recordset_sql($sql, $params);
+            foreach ($rs as $record) {
+                if (!array_key_exists($record->userid, $this->usergroups)) {
+                    $this->usergroups[$record->userid] = array();
+                }
+                $this->usergroups[$record->userid][] = $groupdata->groups[$record->groupid];
+            }
+            $rs->close();
         }
 
-        $grouping = $this->get_instance()->teamsubmissiongroupingid;
-        $return = groups_get_all_groups($this->get_course()->id, $userid, $grouping);
-
-        $this->usergroups[$userid] = $return;
-
-        return $return;
+        return array_key_exists($userid, $this->usergroups)
+                ? $this->usergroups[$userid] : array();
     }
 
 
