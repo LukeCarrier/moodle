@@ -22,8 +22,8 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require('../config.php');
-require($CFG->dirroot.'/cohort/lib.php');
+require_once('../config.php');
+require_once($CFG->dirroot.'/cohort/lib.php');
 require_once($CFG->libdir.'/adminlib.php');
 
 $contextid = optional_param('contextid', 0, PARAM_INT);
