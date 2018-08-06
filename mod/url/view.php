@@ -40,6 +40,7 @@ if ($u) {  // Two ways to specify the module
     $cm = get_coursemodule_from_id('url', $id, 0, false, MUST_EXIST);
     $url = $DB->get_record('url', array('id'=>$cm->instance), '*', MUST_EXIST);
 }
+$url->externalurl = moodle_url::rewrite_placeholder_urls($url->externalurl);
 
 $course = $DB->get_record('course', array('id'=>$cm->course), '*', MUST_EXIST);
 
