@@ -39,6 +39,17 @@ class cachestore_redis_addinstance_form extends cachestore_addinstance_form {
     protected function configuration_definition() {
         $form = $this->_form;
 
+        $form->addElement('advcheckbox', 'persistent', get_string('persistent', 'cachestore_redis'));
+        $form->addHelpButton('persistent', 'persistent', 'cachestore_redis');
+
+        $form->addElement('text', 'persistentid', get_string('persistentid', 'cachestore_redis'));
+        $form->setType('persistentid', PARAM_RAW);
+        $form->addHelpButton('persistentid', 'persistentid', 'cachestore_redis');
+
+        $form->addElement('text', 'timeout', get_string('timeout', 'cachestore_redis'));
+        $form->setType('timeout', PARAM_FLOAT);
+        $form->addHelpButton('timeout', 'timeout', 'cachestore_redis');
+
         $form->addElement('text', 'server', get_string('server', 'cachestore_redis'), array('size' => 24));
         $form->setType('server', PARAM_TEXT);
         $form->addHelpButton('server', 'server', 'cachestore_redis');

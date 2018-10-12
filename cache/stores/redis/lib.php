@@ -136,19 +136,25 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
         }
         $password = !empty($configuration['password']) ? $configuration['password'] : '';
         $prefix = !empty($configuration['prefix']) ? $configuration['prefix'] : '';
-        $this->redis = $this->new_redis($configuration['server'], $prefix, $password);
+        $this->redis = $this->new_redis(
+                $configuration['persistent'], $configuration['persistentid'],
+                $configuration['timeout'], $configuration['server'], $prefix,
+                $password);
     }
 
     /**
      * Create a new Redis instance and
      * connect to the server.
      *
+     * @param bool $persistent Use persistent connection?
+     * @param string $persistentid Persistent connection ID.
+     * @param float $timeout Operation timeout.
      * @param string $server The server connection string
      * @param string $prefix The key prefix
      * @param string $password The server connection password
      * @return Redis
      */
-    protected function new_redis($server, $prefix = '', $password = '') {
+    protected function new_redis($persistent, $persistentid, $timeout, $server, $prefix = '', $password = '') {
         $redis = new Redis();
         $port = null;
         if (strpos($server, ':')) {
@@ -156,7 +162,12 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
             $server = $serverconf[0];
             $port = $serverconf[1];
         }
-        if ($redis->connect($server, $port)) {
+        if ($persistent) {
+            $result = $redis->pconnect($server, $port, $timeout, $persistentid);
+        } else {
+            $result = $redis->connect($server, $port, $timeout);
+        }
+        if ($result) {
             if (!empty($password)) {
                 $redis->auth($password);
             }
@@ -442,6 +453,9 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
      */
     public static function config_get_configuration_array($data) {
         return array(
+            'persistent' => $data->persistent,
+            'persistentid' => $data->persistentid,
+            'timeout' => $data->timeout,
             'server' => $data->server,
             'prefix' => $data->prefix,
             'password' => $data->password,
@@ -458,6 +472,9 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
      */
     public static function config_set_edit_form_data(moodleform $editform, array $config) {
         $data = array();
+        $data['persistent'] = $config['persistent'];
+        $data['persistentid'] = $config['persistentid'];
+        $data['timeout'] = $config['timeout'];
         $data['server'] = $config['server'];
         $data['prefix'] = !empty($config['prefix']) ? $config['prefix'] : '';
         $data['password'] = !empty($config['password']) ? $config['password'] : '';
