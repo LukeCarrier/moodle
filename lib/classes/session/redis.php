@@ -40,6 +40,12 @@ defined('MOODLE_INTERNAL') || die();
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class redis extends handler {
+    /** @var bool $persistent Use persistent connections? */
+    protected $persistent;
+    /** @var string $persistentid Persistent connection ID. */
+    protected $persistentid;
+    /** @var float $operationtimeout */
+    protected $operationtimeout = 1;
     /** @var string $host save_path string  */
     protected $host = '';
     /** @var int $port The port to connect to */
@@ -74,6 +80,18 @@ class redis extends handler {
      */
     public function __construct() {
         global $CFG;
+
+        if (isset($CFG->session_redis_persistent)) {
+            $this->persistent = $CFG->session_redis_persistent;
+        }
+
+        if (isset($CFG->session_redis_persistent_id)) {
+            $this->persistentid = $CFG->session_redis_persistent_id;
+        }
+
+        if (isset($CFG->session_redis_timeout)) {
+            $this->operationtimeout = $CFG->session_redis_timeout;
+        }
 
         if (isset($CFG->session_redis_host)) {
             $this->host = $CFG->session_redis_host;
@@ -168,7 +186,16 @@ class redis extends handler {
                 $delay = rand(100000, 500000);
 
                 // One second timeout was chosen as it is long for connection, but short enough for a user to be patient.
-                if (!$this->connection->connect($this->host, $this->port, 1, null, $delay)) {
+                if ($this->persistent) {
+                    $result = $this->connection->pconnect(
+                            $this->host, $this->port, $this->operationtimeout,
+                            $this->persistentid);
+                } else {
+                    $result = $this->connection->connect(
+                            $this->host, $this->port, $this->operationtimeout,
+                            null, $delay);
+                }
+                if (!$result) {
                     throw new RedisException('Unable to connect to host.');
                 }
 
