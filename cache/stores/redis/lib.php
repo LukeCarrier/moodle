@@ -135,8 +135,9 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
             $this->serializer = (int)$configuration['serializer'];
         }
         $password = !empty($configuration['password']) ? $configuration['password'] : '';
+        $database = !empty($configuration['database']) ? $configuration['database'] : '';
         $prefix = !empty($configuration['prefix']) ? $configuration['prefix'] : '';
-        $this->redis = $this->new_redis($configuration['server'], $prefix, $password);
+        $this->redis = $this->new_redis($configuration['server'], $database, $prefix, $password);
     }
 
     /**
@@ -144,11 +145,12 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
      * connect to the server.
      *
      * @param string $server The server connection string
+     * @param int $database Redis database
      * @param string $prefix The key prefix
      * @param string $password The server connection password
      * @return Redis
      */
-    protected function new_redis($server, $prefix = '', $password = '') {
+    protected function new_redis($server, $database = 0, $prefix = '', $password = '') {
         $redis = new Redis();
         $port = null;
         if (strpos($server, ':')) {
@@ -159,6 +161,9 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
         if ($redis->connect($server, $port)) {
             if (!empty($password)) {
                 $redis->auth($password);
+            }
+            if (!empty($database)) {
+                $redis->select($database);
             }
             $redis->setOption(Redis::OPT_SERIALIZER, $this->serializer);
             if (!empty($prefix)) {
@@ -443,6 +448,7 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
     public static function config_get_configuration_array($data) {
         return array(
             'server' => $data->server,
+            'database' => $data->database,
             'prefix' => $data->prefix,
             'password' => $data->password,
             'serializer' => $data->serializer
@@ -459,6 +465,7 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
     public static function config_set_edit_form_data(moodleform $editform, array $config) {
         $data = array();
         $data['server'] = $config['server'];
+        $data['database'] = !empty($config['database']) ? $config['database'] : '';
         $data['prefix'] = !empty($config['prefix']) ? $config['prefix'] : '';
         $data['password'] = !empty($config['password']) ? $config['password'] : '';
         if (!empty($config['serializer'])) {
