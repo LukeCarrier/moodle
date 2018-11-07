@@ -322,7 +322,7 @@ class redis extends handler {
                     // should close session immediately after access control checks.
                     error_log('Cannot obtain session lock for sid: '.$id.' within '.$this->acquiretimeout.
                             '. It is likely another page has a long session lock, or the session lock was never released.');
-                    throw new exception("Unable to obtain session lock");
+                    throw new retryable_exception("Unable to obtain session lock");
                 }
             } else {
                 $this->locks[$id] = $this->time() + $this->lockexpire;

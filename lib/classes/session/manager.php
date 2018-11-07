@@ -74,9 +74,13 @@ class manager {
             self::prepare_cookies();
             $isnewsession = empty($_COOKIE[session_name()]);
 
-            if (!self::$handler->start()) {
-                // Could not successfully start/recover session.
-                throw new \core\session\exception(get_string('servererror'));
+            try {
+                if (!self::$handler->start()) {
+                    // Could not successfully start/recover session.
+                    throw new \core\session\exception(get_string('servererror'));
+                }
+            } catch (retryable_exception $e) {
+                die($e->getMessage());
             }
 
             self::initialise_user_session($isnewsession);
