@@ -37,7 +37,7 @@ class core_session_manager_testcase extends advanced_testcase {
     public function test_start() {
         $this->resetAfterTest();
         // Session must be started only once...
-        \core\session\manager::start();
+        \core\session\manager::start(true);
         $this->assertDebuggingCalled('Session was already started!', DEBUG_DEVELOPER);
     }
 

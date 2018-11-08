@@ -36,10 +36,15 @@ defined('MOODLE_INTERNAL') || die();
 abstract class handler {
     /**
      * Start the session.
+     * @param bool $acquirelock Acquire the lock?
      * @return bool success
      */
-    public function start() {
-        return session_start();
+    public function start($acquirelock) {
+        $options = [
+            'read_and_close' => !$acquirelock,
+        ];
+
+        return session_start($options);
     }
 
     /**

@@ -106,10 +106,11 @@ class redis extends handler {
     /**
      * Start the session.
      *
+     * @param bool $acquirelock Acquire the lock?
      * @return bool success
      */
-    public function start() {
-        $result = parent::start();
+    public function start($acquirelock) {
+        $result = parent::start($acquirelock);
 
         return $result;
     }

@@ -32,6 +32,7 @@ defined('MOODLE_INTERNAL') || die();
  * Following PHP functions MUST NOT be used directly:
  * - session_start() - not necessary, lib/setup.php starts session automatically,
  *   use define('NO_MOODLE_COOKIE', true) if session not necessary.
+ *   use define('REQUIRE_SESSION_LOCK', true) if writing to session.
  * - session_write_close() - use \core\session\manager::write_close() instead.
  * - session_destroy() - use require_logout() instead.
  *
@@ -49,12 +50,44 @@ class manager {
     /** @var string $logintokenkey Key used to get and store request protection for login form. */
     protected static $logintokenkey = 'core_auth_login';
 
+    /** @var bool $sessionlockheld Is the session locked by this process? */
+    protected static $sessionlockheld = null;
+
+    /** @var mixed $lockedsessiondata Session data at the time of locking */
+    protected static $lockedsessiondata = null;
+
+    /**
+     * Mark the session lock as being held by us.
+     */
+    protected static function mark_lock_held() {
+        self::$sessionlockheld = true;
+        self::$lockedsessiondata = null;
+    }
+
+    /**
+     * Mark the session as released.
+     */
+    protected static function mark_lock_released() {
+        self::$sessionlockheld = false;
+        self::$lockedsessiondata = fullclone($_SESSION);
+    }
+
+    /**
+     * Assert that the session remains unmodified since lock relese.
+     * @return bool
+     */
+    protected static function session_modified() {
+        return static::$lockedsessiondata != $_SESSION;
+    }
+
     /**
      * Start user session.
      *
      * Note: This is intended to be called only from lib/setup.php!
+     *
+     * @param bool $acquirelock Acquire the lock?
      */
-    public static function start() {
+    public static function start($acquirelock) {
         global $CFG, $DB;
 
         if (isset(self::$sessionactive)) {
@@ -77,7 +110,7 @@ class manager {
             self::prepare_cookies();
             $isnewsession = empty($_COOKIE[session_name()]);
 
-            if (!self::$handler->start()) {
+            if (!self::$handler->start($acquirelock)) {
                 // Could not successfully start/recover session.
                 throw new \core\session\exception(get_string('servererror'));
             }
@@ -85,6 +118,12 @@ class manager {
             self::initialise_user_session($isnewsession);
             self::$sessionactive = true; // Set here, so the session can be cleared if the security check fails.
             self::check_security();
+
+            if ($acquirelock) {
+                self::mark_lock_held();
+            } else {
+                self::mark_lock_released();
+            }
 
             // Link global $USER and $SESSION,
             // this is tricky because PHP does not allow references to references
@@ -524,10 +563,16 @@ class manager {
      * Unblocks the sessions, other scripts may start executing in parallel.
      */
     public static function write_close() {
+        if (self::$sessionactive && !self::$sessionlockheld && self::session_modified()) {
+            debugging('detected change to $SESSION without lock held');
+            var_dump(self::$lockedsessiondata);
+            var_dump($_SESSION);
+        }
+
         if (version_compare(PHP_VERSION, '5.6.0', '>=')) {
             // More control over whether session data
             // is persisted or not.
-            if (self::$sessionactive && session_id()) {
+            if (self::$sessionactive && self::$sessionlockheld && session_id()) {
                 // Write session and release lock only if
                 // indication session start was clean.
                 session_write_close();
@@ -539,11 +584,12 @@ class manager {
         } else {
             // Any indication session was started, attempt
             // to close it.
-            if (self::$sessionactive || session_id()) {
+            if ((self::$sessionactive || session_id()) && self::$sessionlockheld) {
                 session_write_close();
             }
         }
         self::$sessionactive = false;
+        self::$sessionlockheld = false;
     }
 
     /**

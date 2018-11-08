@@ -776,10 +776,16 @@ if (CLI_SCRIPT) {
 }
 
 // Start session and prepare global $SESSION, $USER.
+if (!defined('ALWAYS_REQUIRE_SESSION_LOCK')) {
+    define('ALWAYS_REQUIRE_SESSION_LOCK', false);
+}
+if (!defined('REQUIRE_SESSION_LOCK')) {
+    define('REQUIRE_SESSION_LOCK', false);
+}
 if (empty($CFG->sessiontimeout)) {
     $CFG->sessiontimeout = 7200;
 }
-\core\session\manager::start();
+\core\session\manager::start(ALWAYS_REQUIRE_SESSION_LOCK || REQUIRE_SESSION_LOCK);
 
 // Set default content type and encoding, developers are still required to use
 // echo $OUTPUT->header() everywhere, anything that gets set later should override these headers.
