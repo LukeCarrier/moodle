@@ -1822,7 +1822,14 @@ class cache_session extends cache {
         if ($key === self::LASTACCESS) {
             return $key.$prefix;
         }
-        return $prefix.'_'.parent::parse_key($key);
+
+        $parsedkey = parent::parse_key($key);
+        if (is_array($parsedkey)) {
+            $parsedkey['prefix'] = $prefix;
+            return $parsedkey;
+        } else {
+            return $prefix.'_'.$parsedkey;
+        }
     }
 
     /**
