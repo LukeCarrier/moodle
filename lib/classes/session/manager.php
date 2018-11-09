@@ -224,6 +224,9 @@ class manager {
         $_SESSION = array();
         $_SESSION['USER'] =& $GLOBALS['USER'];
         $_SESSION['SESSION'] =& $GLOBALS['SESSION'];
+
+        // Init session key.
+        sesskey();
     }
 
     /**

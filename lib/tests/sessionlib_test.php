@@ -265,7 +265,7 @@ class core_sessionlib_testcase extends advanced_testcase {
         $user = $this->getDataGenerator()->create_user();
 
         \core\session\manager::init_empty_session();
-        $this->assertObjectNotHasAttribute('sesskey', $USER);
+        $this->assertObjectHasAttribute('sesskey', $USER);
 
         $sesskey = sesskey();
         $this->assertNotEmpty($sesskey);

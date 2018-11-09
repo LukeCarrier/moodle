@@ -64,7 +64,9 @@ class core_session_manager_testcase extends advanced_testcase {
         $this->assertSame($GLOBALS['SESSION'], $SESSION);
 
         $this->assertInstanceOf('stdClass', $USER);
-        $this->assertEquals(array('id' => 0, 'mnethostid' => 1), (array)$USER, '', 0, 10, true);
+        $this->assertAttributeEquals(0, 'id', $USER);
+        $this->assertAttributeEquals(1, 'mnethostid', $USER);
+        $this->assertObjectHasAttribute('sesskey', $USER);
         $this->assertSame($GLOBALS['USER'], $_SESSION['USER']);
         $this->assertSame($GLOBALS['USER'], $USER);
 
@@ -154,7 +156,9 @@ class core_session_manager_testcase extends advanced_testcase {
         $this->assertSame($GLOBALS['SESSION'], $SESSION);
 
         $this->assertInstanceOf('stdClass', $USER);
-        $this->assertEquals(array('id' => 0, 'mnethostid' => 1), (array)$USER, '', 0, 10, true);
+        $this->assertAttributeEquals(0, 'id', $USER);
+        $this->assertAttributeEquals(1, 'mnethostid', $USER);
+        $this->assertObjectHasAttribute('sesskey', $USER);
         $this->assertSame($GLOBALS['USER'], $_SESSION['USER']);
         $this->assertSame($GLOBALS['USER'], $USER);
     }
