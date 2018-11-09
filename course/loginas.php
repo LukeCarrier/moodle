@@ -1,6 +1,7 @@
 <?php
 // Allows a teacher/admin to login as another user (in stealth mode).
 
+define('REQUIRE_SESSION_LOCK', true);
 require_once('../config.php');
 require_once('lib.php');
 
