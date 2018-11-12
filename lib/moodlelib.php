@@ -4347,10 +4347,6 @@ function complete_user_login($user) {
 
     \core\session\manager::login_user($user);
 
-    // Reload preferences from DB.
-    unset($USER->preference);
-    check_user_preferences_loaded($USER);
-
     // Update login times.
     update_user_login_times();
 
