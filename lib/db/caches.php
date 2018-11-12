@@ -292,4 +292,11 @@ $definitions = array(
             'resettagindexbuilder',
         ),
     ),
+
+    // Cached user preferences.
+    'userpreferences' => array(
+        'mode' => cache_store::MODE_APPLICATION,
+        'simplekeys' => true,
+        'ttl' => 120,
+    ),
 );

@@ -1763,14 +1763,12 @@ function gc_cache_flags() {
  * @category preference
  * @access   public
  * @param    stdClass         $user          User object. Preferences are preloaded into 'preference' property
- * @param    int              $cachelifetime Cache life time on the current page (in seconds)
+ * @param    int              $unused        Unused (formerly cache life time on the current page (in seconds))
  * @throws   coding_exception
  * @return   null
  */
-function check_user_preferences_loaded(stdClass $user, $cachelifetime = 120) {
+function check_user_preferences_loaded(stdClass $user, $unused = null) {
     global $DB;
-    // Static cache, we need to check on each page load, not only every 2 minutes.
-    static $loadedusers = array();
 
     if (!isset($user->id)) {
         throw new coding_exception('Invalid $user parameter in check_user_preferences_loaded() call, missing id field');
@@ -1784,25 +1782,12 @@ function check_user_preferences_loaded(stdClass $user, $cachelifetime = 120) {
         return;
     }
 
-    $timenow = time();
-
-    if (isset($loadedusers[$user->id]) and isset($user->preference) and isset($user->preference['_lastloaded'])) {
-        // Already loaded at least once on this page. Are we up to date?
-        if ($user->preference['_lastloaded'] + $cachelifetime > $timenow) {
-            // No need to reload - we are on the same page and we loaded prefs just a moment ago.
-            return;
-
-        } else if (!get_cache_flag('userpreferenceschanged', $user->id, $user->preference['_lastloaded'])) {
-            // No change since the lastcheck on this page.
-            $user->preference['_lastloaded'] = $timenow;
-            return;
-        }
+    $cache = cache::make('core', 'userpreferences');
+    $user->preference = $cache->get($user->id);
+    if ($user->preference === false) {
+        $user->preference = $DB->get_records_menu('user_preferences', array('userid' => $user->id), '', 'name,value');
+        $cache->set($user->id, $user->preference);
     }
-
-    // OK, so we have to reload all preferences.
-    $loadedusers[$user->id] = true;
-    $user->preference = $DB->get_records_menu('user_preferences', array('userid' => $user->id), '', 'name,value'); // All values.
-    $user->preference['_lastloaded'] = $timenow;
 }
 
 /**
@@ -1815,14 +1800,13 @@ function check_user_preferences_loaded(stdClass $user, $cachelifetime = 120) {
  * @param integer $userid the user whose prefs were changed.
  */
 function mark_user_preferences_changed($userid) {
-    global $CFG;
-
     if (empty($userid) or isguestuser($userid)) {
         // No cache flags for guest and not-logged-in users.
         return;
     }
 
-    set_cache_flag('userpreferenceschanged', $userid, 1, time() + $CFG->sessiontimeout);
+    $cache = cache::make('core', 'userpreferences');
+    $cache->delete($userid);
 }
 
 /**
@@ -1843,7 +1827,7 @@ function mark_user_preferences_changed($userid) {
 function set_user_preference($name, $value, $user = null) {
     global $USER, $DB;
 
-    if (empty($name) or is_numeric($name) or $name === '_lastloaded') {
+    if (empty($name) or is_numeric($name)) {
         throw new coding_exception('Invalid preference name in set_user_preference() call');
     }
 
@@ -1942,7 +1926,7 @@ function set_user_preferences(array $prefarray, $user = null) {
 function unset_user_preference($name, $user = null) {
     global $USER, $DB;
 
-    if (empty($name) or is_numeric($name) or $name === '_lastloaded') {
+    if (empty($name) or is_numeric($name)) {
         throw new coding_exception('Invalid preference name in unset_user_preference() call');
     }
 
@@ -2008,7 +1992,7 @@ function get_user_preferences($name = null, $default = null, $user = null) {
 
     if (is_null($name)) {
         // All prefs.
-    } else if (is_numeric($name) or $name === '_lastloaded') {
+    } else if (is_numeric($name)) {
         throw new coding_exception('Invalid preference name in get_user_preferences() call');
     }
 

@@ -1006,18 +1006,6 @@ class core_moodlelib_testcase extends advanced_testcase {
         $this->assertSame('December', $month);
     }
 
-    public function test_mark_user_preferences_changed() {
-        $this->resetAfterTest();
-        $otheruser = $this->getDataGenerator()->create_user();
-        $otheruserid = $otheruser->id;
-
-        set_cache_flag('userpreferenceschanged', $otheruserid, null);
-        mark_user_preferences_changed($otheruserid);
-
-        $this->assertEquals(get_cache_flag('userpreferenceschanged', $otheruserid, time()-10), 1);
-        set_cache_flag('userpreferenceschanged', $otheruserid, null);
-    }
-
     public function test_check_user_preferences_loaded() {
         global $DB;
         $this->resetAfterTest();
@@ -1026,7 +1014,6 @@ class core_moodlelib_testcase extends advanced_testcase {
         $otheruserid = $otheruser->id;
 
         $DB->delete_records('user_preferences', array('userid'=>$otheruserid));
-        set_cache_flag('userpreferenceschanged', $otheruserid, null);
 
         $user = new stdClass();
         $user->id = $otheruserid;
@@ -1035,34 +1022,29 @@ class core_moodlelib_testcase extends advanced_testcase {
         check_user_preferences_loaded($user);
         $this->assertTrue(isset($user->preference));
         $this->assertTrue(is_array($user->preference));
-        $this->assertArrayHasKey('_lastloaded', $user->preference);
-        $this->assertCount(1, $user->preference);
+        $this->assertCount(0, $user->preference);
 
         // Add preference via direct call.
         $DB->insert_record('user_preferences', array('name'=>'xxx', 'value'=>'yyy', 'userid'=>$user->id));
 
         // No cache reload yet.
         check_user_preferences_loaded($user);
-        $this->assertCount(1, $user->preference);
+        $this->assertCount(0, $user->preference);
 
         // Forced reloading of cache.
+        $cache = cache::make('core', 'userpreferences');
+        $cache->delete($user->id);
         unset($user->preference);
         check_user_preferences_loaded($user);
-        $this->assertCount(2, $user->preference);
+        $this->assertCount(1, $user->preference);
         $this->assertSame('yyy', $user->preference['xxx']);
 
         // Add preference via direct call.
         $DB->insert_record('user_preferences', array('name'=>'aaa', 'value'=>'bbb', 'userid'=>$user->id));
 
-        // Test timeouts and modifications from different session.
-        set_cache_flag('userpreferenceschanged', $user->id, 1, time() + 1000);
-        $user->preference['_lastloaded'] = $user->preference['_lastloaded'] - 20;
+        // Cache values won't change if directly modified.
         check_user_preferences_loaded($user);
-        $this->assertCount(2, $user->preference);
-        check_user_preferences_loaded($user, 10);
-        $this->assertCount(3, $user->preference);
-        $this->assertSame('bbb', $user->preference['aaa']);
-        set_cache_flag('userpreferenceschanged', $user->id, null);
+        $this->assertCount(1, $user->preference);
     }
 
     public function test_set_user_preference() {
@@ -1075,7 +1057,6 @@ class core_moodlelib_testcase extends advanced_testcase {
         $otheruserid = $otheruser->id;
 
         $DB->delete_records('user_preferences', array('userid'=>$otheruserid));
-        set_cache_flag('userpreferenceschanged', $otheruserid, null);
 
         $user = new stdClass();
         $user->id = $otheruserid;
@@ -1107,7 +1088,6 @@ class core_moodlelib_testcase extends advanced_testcase {
         $this->assertSame('lala', get_user_preferences('undefined', 'lala', $otheruserid));
 
         $DB->delete_records('user_preferences', array('userid'=>$otheruserid));
-        set_cache_flag('userpreferenceschanged', $otheruserid, null);
 
         // Test $USER default.
         set_user_preference('_test_user_preferences_pref', 'ok');
@@ -2628,7 +2608,6 @@ class core_moodlelib_testcase extends advanced_testcase {
         $this->assertTimeCurrent($USER->lastaccess);
         $this->assertTimeCurrent($USER->currentlogin);
         $this->assertSame(sesskey(), $USER->sesskey);
-        $this->assertTimeCurrent($USER->preference['_lastloaded']);
         $this->assertObjectNotHasAttribute('password', $USER);
         $this->assertObjectNotHasAttribute('description', $USER);
     }
