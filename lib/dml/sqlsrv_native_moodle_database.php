@@ -207,22 +207,23 @@ class sqlsrv_native_moodle_database extends moodle_database {
         sqlsrv_configure("LogSeverity", SQLSRV_LOG_SEVERITY_ERROR);
 
         $this->store_settings($dbhost, $dbuser, $dbpass, $dbname, $prefix, $dboptions);
-
+        $options = [
+            'UID' => $this->dbuser,
+            'PWD' => $this->dbpass,
+            'Database' => $this->dbname,
+            'CharacterSet' => 'UTF-8',
+            'MultipleActiveResultSets' => true,
+            'ConnectionPooling' => !empty($this->dboptions['dbpersist']),
+            'ReturnDatesAsStrings' => true,
+        ];
         $dbhost = $this->dbhost;
-        if (!empty($dboptions['dbport'])) {
+        if (array_key_exists('dbport', $this->dboptions)) {
             $dbhost .= ',' . $dboptions['dbport'];
         }
-
-        $this->sqlsrv = sqlsrv_connect($dbhost, array
-         (
-          'UID' => $this->dbuser,
-          'PWD' => $this->dbpass,
-          'Database' => $this->dbname,
-          'CharacterSet' => 'UTF-8',
-          'MultipleActiveResultSets' => true,
-          'ConnectionPooling' => !empty($this->dboptions['dbpersist']),
-          'ReturnDatesAsStrings' => true,
-         ));
+        if (array_key_exists('sqlsrvinfo', $this->dboptions)) {
+            $options = array_merge($options, $this->dboptions['sqlsrvinfo']);
+        }
+        $this->sqlsrv = sqlsrv_connect($dbhost, $options);
 
         if ($this->sqlsrv === false) {
             $this->sqlsrv = null;
