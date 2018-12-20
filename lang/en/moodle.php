@@ -1182,6 +1182,7 @@ $string['messagebody'] = 'Message body';
 $string['messagedselectedusers'] = 'Selected users have been messaged and the recipient list has been reset.';
 $string['messagedselecteduserfailed'] = 'The message was not sent to user {$a->fullname}.';
 $string['messagedselectedusersfailed'] = 'Something went wrong while messaging selected users.  Some may have received the email.';
+$string['messageprovider:asyncbackupnotification'] = 'Asynchronous backup/restore notifications';
 $string['messagedselectedcountusersfailed'] = 'A problem occurred and {$a} messages have not been sent.';
 $string['messageprovider:availableupdate'] = 'Available update notifications';
 $string['messageprovider:backup'] = 'Backup notifications';
