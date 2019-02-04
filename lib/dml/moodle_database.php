@@ -1915,11 +1915,6 @@ abstract class moodle_database {
      * @throws dml_exception A DML specific exception is thrown for any errors.
      */
     public function delete_records($table, array $conditions=null) {
-        // truncate is drop/create (DDL), not transactional safe,
-        // so we don't use the shortcut within them. MDL-29198
-        if (is_null($conditions) && empty($this->transactions)) {
-            return $this->execute("TRUNCATE TABLE {".$table."}");
-        }
         list($select, $params) = $this->where_clause($table, $conditions);
         return $this->delete_records_select($table, $select, $params);
     }
