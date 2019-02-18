@@ -176,12 +176,8 @@ class database extends handler {
                 $this->recordid = $record->id;
             }
         } catch (\dml_sessionwait_exception $ex) {
-            // This is a fatal error, better inform users.
-            // It should not happen very often - all pages that need long time to execute
-            // should close session immediately after access control checks.
-            error_log('Cannot obtain session lock for sid: '.$sid);
             $this->failed = true;
-            throw $ex;
+            throw new lock_acquire_timeout_exception($sid, $ex);
 
         } catch (\Exception $ex) {
             // Do not rethrow exceptions here, this should not happen.
