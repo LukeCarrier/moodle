@@ -358,12 +358,7 @@ class redis extends handler {
             if (!$haslock) {
                 usleep(rand(100000, 1000000));
                 if ($this->time() > $startlocktime + $this->acquiretimeout) {
-                    // This is a fatal error, better inform users.
-                    // It should not happen very often - all pages that need long time to execute
-                    // should close session immediately after access control checks.
-                    error_log('Cannot obtain session lock for sid: '.$id.' within '.$this->acquiretimeout.
-                            '. It is likely another page has a long session lock, or the session lock was never released.');
-                    throw new exception("Unable to obtain session lock");
+                    throw new lock_acquire_timeout_exception($id);
                 }
             } else {
                 $this->locks[$id] = $this->time() + $this->lockexpire;
