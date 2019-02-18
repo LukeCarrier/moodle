@@ -77,9 +77,21 @@ class manager {
             self::prepare_cookies();
             $isnewsession = empty($_COOKIE[session_name()]);
 
-            if (!self::$handler->start()) {
-                // Could not successfully start/recover session.
-                throw new \core\session\exception(get_string('servererror'));
+            try {
+                if (!self::$handler->start()) {
+                    // Could not successfully start/recover session.
+                    throw new \core\session\exception(get_string('servererror'));
+                }
+            } catch (lock_acquire_timeout_exception $e) {
+                // This is a fatal error, better inform users.
+                // It should not happen very often - all pages that need long time to execute
+                // should close session immediately after access control checks.
+                $error = 'Cannot obtain session lock for sid: '.$e->get_sid();
+                if ($innere = $e->get_inner_exception()) {
+                    $error .= ' ('.$innere->getMessage().')';
+                }
+                error_log($error);
+                throw $e;
             }
 
             self::initialise_user_session($isnewsession);
